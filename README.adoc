@@ -1,1 +1,61 @@
-# infinispan-cachestore-ceph
+= Infinispan Ceph Cachestore
+
+Cache store implementation which allows to store cache entries into http://ceph.com/[Ceph] cluster.
+Ceph is a distributed object store and file system designed to provide reliability and scalability to the exabyte level.
+It leverages http://docs.ceph.com/docs/hammer/rados/api/librados-intro/[librados] for communication with Ceph cluster.  
+If not configure otherwise, entries from the cache are store into dedicated http://docs.ceph.com/docs/jewel/rados/operations/pools/[Ceph pool].
+
+== Usage
+You can use following properties to configure Ceph cache store:
+
+* `user-name`: User name for authentication against Ceph.
+* `key`: Key for Ceph authentication. Alternatively, path to keyring file which contains key can be set up via keyringPath.
+* `keyring-path`: Path to Ceph key ring file. This file must contain valid key for authentication.
+* `monitor-host`: Ceph monitor. Expected format is `$MINITOR_HOST:$PORT`, e.g. `127.0.0.1:6789`.
+* `pool-name`: Name of the Ceph pool where cache data will be stored. Note that if pool name is set, no additional prefix is added, so *if caches are configured with same pool name, cache store will overwrite keys with the same name*!
+* `pool-name-prefix`: Prefix for constructing Ceph pool name. Pool name is constructed as `$PREFIX_$CACHENAME`, where `$CACHENAME` is name of the cache where non-alphabetical and non-digit characters are replaced by underscore.
+* `key-2-string-mapper`:  The name of a class to be used for converting keys to strings. Defaults to `org.infinispan.persistence.keymappers.MarshalledValueOrPrimitiveMapper`.
+
+Example of programatic configuration:
+[source,java]
+----
+ConfigurationBuilder cfg = new ConfigurationBuilder();
+cfg.persistence().addStore(CephStoreConfigurationBuilder.class)
+    .userName("admin")
+    .key("AQCY2sdXyDIcJxAAK1edRJ8xOJ2NkkiXzAuq5A==")
+    .monitorHost("192.168.122.145:6789")
+    .poolNamePrefix("test");
+----
+
+Example of XML configuration:
+[source,xml]
+----
+<?xml version="1.0" encoding="UTF-8"?>
+<infinispan>
+    <cache-container>
+        <local-cache name="test">
+            <persistence passivation="false">
+                <ceph-store xmlns="urn:infinispan:config:store:ceph:9.0"
+                    user-name="admin"
+                    key="AQCY2sdXyDIcJxAAK1edRJ8xOJ2NkkiXzAuq5A=="
+                    monitor-host="192.168.122.145:6789"
+		    pool-name-prefix="test"/>
+            </persistence>
+        </local-cache>
+    </cache-container>
+</infinispan>
+----
+
+== Testing
+There are two types of tests.
+Unit tests which tests configuration and tests which tests functionality of the cachestore.
+Configuration tests are run by default with `mvn test`.
+Store functional tests uses Infinispan's `BaseStoreTest` and `BaseStoreFunctionalTest` for actual testing.
+However, it requires Ceph cluster running somewhere and thus these tests are placed in `ceph` profile.
+You can run the tests by specifying this profile directly or the profile is activated automatically when java property `cephKey` is provided.
+You can also use property `cephMonitor` to specify Ceph monitor.
+If the minitor is not set up, localhost is used as deault.
+Example how test execute tests (assuming Ceph cluster is running and Ceph monitor listens on `192.168.122.145:6789`):
+```
+mvn clean test -DcephKey=AQCY2sdXyDIcJxAAK1edRJ8xOJ2NkkiXzAuq5A== -DcephMonitor=192.168.122.145:6789
+```
