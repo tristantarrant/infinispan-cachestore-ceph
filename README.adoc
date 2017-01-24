@@ -16,6 +16,7 @@ You can use following properties to configure Ceph cache store:
 * `pool-name-prefix`: Prefix for constructing Ceph pool name. Pool name is constructed as `$PREFIX_$CACHENAME`, where `$CACHENAME` is name of the cache where non-alphabetical and non-digit characters are replaced by underscore.
 * `key-2-string-mapper`:  The name of a class to be used for converting keys to strings. Defaults to `org.infinispan.persistence.keymappers.MarshalledValueOrPrimitiveMapper`.
 
+=== Library mode
 Example of programatic configuration:
 [source,java]
 ----
@@ -44,6 +45,27 @@ Example of XML configuration:
         </local-cache>
     </cache-container>
 </infinispan>
+----
+
+=== Server mode
+To use Ceph cache store with Infinispan server, you need to compile Ceph cache store with all and dependenced and deploy resulting into Infnispan server.
+To create fat jar wtih all dependencies, just run
+[source,xml]
+----
+mvn package -Puberjar
+----
+Deploy resulting artifact (`targer/infinispan-cachestore-ceph-${version}-jar-with-dependencies.jar`) into Infinispan server, e.g. by copying the artifact into `deployments` folfer.
+You can configure Ceph cache store via custom cache store configuration:
+[source,xml]
+----
+<local-cache name="cacheWithCephStore" start="EAGER">
+    [...]
+    <store class="org.infinispan.persistence.ceph.CephStore">
+        <property name="monitorHost">192.168.122.145:6789</property>
+        <property name="userName">admin</property>
+        <property name="key">AQCY2sdXyDIcJxAAK1edRJ8xOJ2NkkiXzAuq5A==</property>
+    </store -->
+</local-cache>
 ----
 
 == Testing
